@@ -1,0 +1,22 @@
+let
+    Source = Excel.Workbook(File.Contents("C:\KSR\POWER BI\data\EmployeeData.xlsx"), null, true),
+    EmployeeData1_Sheet = Source{[Item="EmployeeData1",Kind="Sheet"]}[Data],
+    #"Promoted Headers" = Table.PromoteHeaders(EmployeeData1_Sheet, [PromoteAllScalars=true]),
+    #"Changed Type" = Table.TransformColumnTypes(#"Promoted Headers",{{"EmployeeID", Int64.Type}, {"NationalIDNumber", Int64.Type}, {"ContactID", Int64.Type}, {"LoginID", type text}, {"ManagerID", Int64.Type}, {"Title", type text}, {"BirthDate", type datetime}, {"MaritalStatus", type text}, {"Gender", type text}, {"HireDate", type datetime}, {"Dept", type text}, {"Salary", Int64.Type}, {"Job Grade", type text}, {"CurrentFlag", Int64.Type}, {"rowguid", type text}}),
+    #"Removed Columns" = Table.RemoveColumns(#"Changed Type",{"NationalIDNumber", "ContactID", "LoginID", "ManagerID", "CurrentFlag", "rowguid"}),
+    #"First Name" = Table.AddColumn(#"Removed Columns", "Text Before Delimiter", each Text.BeforeDelimiter([Title], " "), type text),
+    #"Last Name" = Table.AddColumn(#"First Name", "Text After Delimiter", each Text.AfterDelimiter([Title], " "), type text),
+    #"Renamed Fir" = Table.RenameColumns(#"Last Name",{{"Text Before Delimiter", "First Name"}, {"Text After Delimiter", "Last Name"}}),
+    #"Capitalized Each Word" = Table.TransformColumns(#"Renamed Fir",{{"First Name", Text.Proper, type text}, {"Last Name", Text.Proper, type text}}),
+    #"Removed las" = Table.RemoveColumns(#"Capitalized Each Word",{"Title"}),
+    #"Changed To Date Format" = Table.TransformColumnTypes(#"Removed las",{{"BirthDate", type date}}),
+    #"Marital Status" = Table.AddColumn(#"Changed To Date Format", "Custom", each if [MaritalStatus] = "M" then "Married" else if [MaritalStatus] = "S" then "Single" else null, type text),
+    #"Removed Orignal Marital status" = Table.RemoveColumns(#"Marital Status",{"MaritalStatus"}),
+    Gender = Table.AddColumn(#"Removed Orignal Marital status", "Custom.1", each if [Gender] = "M" then "Male" else if [Gender] = "F" then "Female" else null, type text),
+    #"Renamed Gender" = Table.RenameColumns(Gender,{{"Custom", "Marital status"}}),
+    #"Removed Orignal Gender" = Table.RemoveColumns(#"Renamed Gender",{"Gender"}),
+    #"Name gender" = Table.RenameColumns(#"Removed Orignal Gender",{{"Custom.1", "Gender"}}),
+    #"Changed foramt" = Table.TransformColumnTypes(#"Name gender",{{"HireDate", type date}}),
+    #"Hire Date In Date Format" = Table.TransformColumnTypes(#"Changed foramt",{{"HireDate", type date}})
+in
+    #"Hire Date In Date Format"
